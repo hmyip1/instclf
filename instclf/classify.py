@@ -71,8 +71,6 @@ def create_data(mfcc_means_path, mfcc_std_path, mfcc_matrix_path, label_matrix_p
 
         instrument_mfcc_matrix_train = np.hstack(instrument_mfcc_list_train) #stacking matrices for each audio file
         instrument_label_matrix_train = np.hstack(instrument_label_list_train)
-        np.save(train_mfcc_file, instrument_mfcc_matrix_train)
-        np.save(train_label_file, instrument_label_matrix_train)
         
         train_mfcc_list.append(instrument_mfcc_matrix_train) #master master, all instruments smushed
         train_label_list.append(instrument_label_matrix_train)
@@ -109,7 +107,7 @@ def train(mfcc_matrix_path, label_matrix_path):
 
     x_train, y_train = (train_mfcc_matrix_normal, train_label_matrix)
    
-    clf = RandomForestClassifier(n_estimators=400, class_weight=None) #unweighted based on class occurance
+    clf = RandomForestClassifier(n_estimators=10, class_weight=None) #unweighted based on class occurance
     clf.fit(x_train, y_train)
 
     joblib.dump(clf, MODEL_PATH)
@@ -118,7 +116,7 @@ def train(mfcc_matrix_path, label_matrix_path):
             
 
 def predict(audio_file, mfcc_means_path, mfcc_std_path):
-    joblib.load(MODEL_PATH)
+    clf = joblib.load(MODEL_PATH)
 
     train_mfcc_means = np.load(mfcc_means_path)
     train_mfcc_std = np.load(mfcc_std_path)
@@ -135,7 +133,7 @@ def predict(audio_file, mfcc_means_path, mfcc_std_path):
     # compute MFCCs for individual audio file
     M = librosa.feature.mfcc(y, sr=fs, n_mfcc=40)
     
-    audio_mfcc_matrix_normal = (M - train_mfcc_means)/train_mfcc_std
+    audio_mfcc_matrix_normal = (M.T - train_mfcc_means)/train_mfcc_std
 
     predictions = clf.predict(audio_mfcc_matrix_normal)
     max_prediction = np.argmax(predictions)
