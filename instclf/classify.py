@@ -8,15 +8,20 @@ from sklearn.externals import joblib
 import os
 import sox
 import tempfile as tmp
-import matplotlib.pyplot as plt1
+import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import mode
 
 
 MODEL_PATH = "resources/instrument_classifier.pkl"
 TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
-def create_data(mfcc_means_path, mfcc_std_path, mfcc_matrix_path, label_matrix_path, target_names=TARGET_NAMES):
+def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
+    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
+    mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
+    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy", 
+    target_names=TARGET_NAMES):
 
     #list and label all multitracks without bleed
     loader = mdb.load_all_multitracks()
@@ -96,18 +101,19 @@ def create_data(mfcc_means_path, mfcc_std_path, mfcc_matrix_path, label_matrix_p
     np.save(label_matrix_path, train_label_matrix)
 
     label_values = sorted(list(file_dict.keys()))
-    np.save("label_values.npy", TARGET_NAMES)
+    np.save("label_values.npy", label_values)
 
 
 
-def train(mfcc_matrix_path, label_matrix_path):
+def train(mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
+    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy"):
 
     train_mfcc_matrix_normal = np.load(mfcc_matrix_path)
     train_label_matrix = np.load(label_matrix_path)
 
     x_train, y_train = (train_mfcc_matrix_normal, train_label_matrix)
    
-    clf = RandomForestClassifier(n_estimators=10, class_weight=None) #unweighted based on class occurance
+    clf = RandomForestClassifier(n_estimators=100, class_weight=None) #unweighted based on class occurance
     clf.fit(x_train, y_train)
 
     joblib.dump(clf, MODEL_PATH)
@@ -115,7 +121,10 @@ def train(mfcc_matrix_path, label_matrix_path):
     return clf
             
 
-def predict(audio_file, mfcc_means_path, mfcc_std_path):
+def predict(audio_file, 
+    mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy",
+    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy"):
+    
     clf = joblib.load(MODEL_PATH)
 
     train_mfcc_means = np.load(mfcc_means_path)
@@ -124,6 +133,7 @@ def predict(audio_file, mfcc_means_path, mfcc_std_path):
     # normalizing volume
     temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
     tfm = sox.Transformer()
+    tfm.silence()
     tfm.norm(db_level=-6)
     tfm.build(audio_file, temp_fpath.name)
 
@@ -135,9 +145,33 @@ def predict(audio_file, mfcc_means_path, mfcc_std_path):
     
     audio_mfcc_matrix_normal = (M.T - train_mfcc_means)/train_mfcc_std
 
-    predictions = clf.predict(audio_mfcc_matrix_normal)
-    max_prediction = np.argmax(predictions)
-    return TARGET_NAMES[max_prediction]
+    print (audio_mfcc_matrix_normal.shape)
+    print (M.shape)
+    predictions = clf.predict_proba(audio_mfcc_matrix_normal)
+    predictions2 = clf.predict(audio_mfcc_matrix_normal)
+    
+    print (predictions2)
+    mode_predictions = mode(predictions2)
+    print (mode_predictions[0])
+    print (TARGET_NAMES[int(mode_predictions[0])])
+
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.plot(predictions2, range(0, len(TARGET_NAMES)), "o")
+    plt.xticks(np.arange(len(TARGET_NAMES)), TARGET_NAMES, rotation="vertical")
+
+    print  (predictions.shape)
+    avg_predictions = predictions.mean(axis=0)
+    print (avg_predictions.shape)
+
+    plt.subplot(1,2,2)
+    plt.plot(np.arange(len(TARGET_NAMES)), avg_predictions, "o")
+    plt.xticks(np.arange(len(TARGET_NAMES)), TARGET_NAMES, rotation="vertical")
+    plt.show()
+
+    max_prediction = np.argmax(avg_predictions)
+    print ("likely: " + str(max_prediction))
+    print (TARGET_NAMES[max_prediction])
  
 
 
