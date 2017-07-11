@@ -20,6 +20,12 @@ if __name__ == "__main__":
         keywords='audio instrument classifier instclf',
         license='MIT',
         install_requires=[
+            "numpy",
+            "scikit-learn",
+            "librosa",
+            "sox",
+            "matplotlib",
+            "scipy"
         ],
         extras_require={
             'tests': [
