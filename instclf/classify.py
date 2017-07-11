@@ -106,7 +106,8 @@ def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/ins
 
 
 def train(mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
-    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy"):
+    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy",
+    model_save_path=MODEL_PATH):
 
     train_mfcc_matrix_normal = np.load(mfcc_matrix_path)
     train_label_matrix = np.load(label_matrix_path)
@@ -116,7 +117,7 @@ def train(mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/
     clf = RandomForestClassifier(n_estimators=100, class_weight=None) #unweighted based on class occurance
     clf.fit(x_train, y_train)
 
-    joblib.dump(clf, MODEL_PATH)
+    joblib.dump(clf, model_save_path)
 
     return clf
             
