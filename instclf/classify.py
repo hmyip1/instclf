@@ -11,19 +11,19 @@ import tempfile as tmp
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import mode
+from collections import namedtuple
+import operator
+import pandas as pd
+from collections import OrderedDict
 
 
-MODEL_PATH = "resources/instrument_classifier.pkl"
+
+
+MODEL_PATH = "/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"
 TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
-def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
-    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
-    mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
-    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy", 
-    target_names=TARGET_NAMES):
-
-    #list and label all multitracks without bleed
+def get_multitracks():
     loader = mdb.load_all_multitracks()
     no_bleed_mtracks = []
     for mtrack in loader:
@@ -41,7 +41,29 @@ def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/ins
             continue
         file_dict[label] = label_list
 
-    #get labels and mfccs
+    label_values = sorted(list(file_dict.keys()))
+    np.save("label_values.npy", label_values)
+
+    print (file_dict)
+    return file_dict
+
+def normalize_MFCC(file):
+    temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
+    tfm = sox.Transformer()
+    tfm.norm(db_level=-6)
+    tfm.silence()
+    tfm.build(file, temp_fpath.name)        
+    y, fs = librosa.load(temp_fpath.name)
+
+    M = librosa.feature.mfcc(y, sr=fs, n_mfcc=40)
+    return M, y, fs
+
+
+def mfcc_and_label(file_dict=None):
+
+    if file_dict is None:
+        file_dict = get_multitracks()
+
     train_mfcc_list = []
     train_label_list = []
 
@@ -52,22 +74,10 @@ def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/ins
         instrument_mfcc_list_train = []
         instrument_label_list_train = []
 
-
         # loop over files for instruments
         for fpath in file_dict[label]:
 
-            # normalizing volume, removing silence
-            temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
-            tfm = sox.Transformer()
-            tfm.norm(db_level=-6)
-            tfm.silence()
-            tfm.build(fpath, temp_fpath.name)
-
-            # load audio
-            y, fs = librosa.load(temp_fpath.name)
-
-            # compute MFCCs for individual audio file
-            M = librosa.feature.mfcc(y, sr=fs, n_mfcc=40)
+            M, y, fs = normalize_MFCC(fpath)
 
             lab = np.zeros((len(M[0]), )) + label_index
             instrument_mfcc_list_train.append(M)
@@ -82,12 +92,33 @@ def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/ins
 
         label_index = label_index + 1
 
-    #SAVING TRAINING DATA
 
     train_mfcc_matrix = np.hstack(train_mfcc_list).T
     train_label_matrix = np.hstack(train_label_list)
-    
 
+    print ("shape1: " + str(train_mfcc_matrix.shape))
+    print ("shape1: " + str(train_label_matrix.shape))
+
+    return (train_mfcc_matrix, train_label_matrix)
+
+
+def standardize_matrix(matrix, mean, std):
+
+    matrix_normal = (matrix - mean)/std
+    return matrix_normal
+
+
+
+
+def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
+    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
+    mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
+    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy", 
+    target_names=TARGET_NAMES):
+
+    #get labels and mfccs of all multitracks without bleed
+    train_mfcc_matrix, train_label_matrix = mfcc_and_label()
+    
 
     #STANDARDIZING MFCC MATRIX
 
@@ -95,13 +126,11 @@ def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/ins
     train_mfcc_std = np.std(train_mfcc_matrix, axis=0)
     np.save(mfcc_means_path, train_mfcc_means)
     np.save(mfcc_std_path, train_mfcc_std)
+    
+    train_mfcc_matrix_normal = standardize_matrix(train_mfcc_matrix, train_mfcc_means, train_mfcc_std)
 
-    train_mfcc_matrix_normal = (train_mfcc_matrix - train_mfcc_means)/train_mfcc_std
     np.save(mfcc_matrix_path, train_mfcc_matrix_normal)
     np.save(label_matrix_path, train_label_matrix)
-
-    label_values = sorted(list(file_dict.keys()))
-    np.save("label_values.npy", label_values)
 
 
 
@@ -122,7 +151,58 @@ def train(mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/
     return clf
             
 
-def predict(audio_file, 
+def predict_mode(classifier, matrix):
+    predictions1 = classifier.predict(matrix)
+    return predictions1
+
+def instrument(predictions):
+    print predictions
+    
+    
+    unique_elements, counts = np.unique(predictions, return_counts=True)
+    print unique_elements
+    frequency_predictions = [0 for i in range(len(TARGET_NAMES))]
+    print frequency_predictions
+    print counts
+    
+    for i, j in zip(unique_elements, range(len(counts))):
+        frequency_predictions[int(i)] = counts[int(j)]/float(len(predictions))
+        print frequency_predictions
+
+    print frequency_predictions
+    guess_dict = {}
+    instrument_probability = zip(TARGET_NAMES, frequency_predictions)
+    for name, probability in instrument_probability:
+        guess_dict[name] = round(probability, 3)
+
+    sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
+
+    mode_predictions = mode(predictions)
+    guess = TARGET_NAMES[int(mode_predictions[0])]
+    return guess, sorted_guesses
+
+# def predict_prob(classifier, matrix):
+#     predictions2 = classifier.predict_proba(matrix)
+#     return predictions2
+
+# def instrument2(predictions):
+#     avg_predictions = np.round(predictions.mean(axis=0), 3)
+#     max_prediction = np.argmax(avg_predictions)
+#     guess2 = TARGET_NAMES[max_prediction]
+#     print avg_predictions
+
+#     guess_dict = {}
+#     instrument_probability = zip(TARGET_NAMES, avg_predictions)
+#     for name, probability in instrument_probability:
+#         guess_dict[name] = round(probability, 3)
+
+#     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
+
+#     return sorted_guesses, guess2
+
+
+
+def real_data(audio_file, 
     mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy",
     mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy"):
     
@@ -131,50 +211,45 @@ def predict(audio_file,
     train_mfcc_means = np.load(mfcc_means_path)
     train_mfcc_std = np.load(mfcc_std_path)
 
-    # normalizing volume
-    temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
-    tfm = sox.Transformer()
-    tfm.silence()
-    tfm.norm(db_level=-6)
-    tfm.build(audio_file, temp_fpath.name)
+    # normalizing volume and compute MFCC
 
-    # load audio
-    y, fs = librosa.load(temp_fpath.name)
-
-    # compute MFCCs for individual audio file
-    M = librosa.feature.mfcc(y, sr=fs, n_mfcc=40)
+    M, y, fs = normalize_MFCC(audio_file)
     
-    audio_mfcc_matrix_normal = (M.T - train_mfcc_means)/train_mfcc_std
+    audio_mfcc_matrix_normal = standardize_matrix(M.T, train_mfcc_means, train_mfcc_std)
+    # np.save("/Users/hmyip/Documents/repositories/instclf/tests/data/piano_matrix.npy", audio_mfcc_matrix_normal)
 
-    print (audio_mfcc_matrix_normal.shape)
-    print (M.shape)
-    predictions = clf.predict_proba(audio_mfcc_matrix_normal)
-    predictions2 = clf.predict(audio_mfcc_matrix_normal)
+    #prediction with mode
+    predictions1 = predict_mode(clf, audio_mfcc_matrix_normal)
+    guess, sorted_guesses = instrument(predictions1)
+    print ("guess1: " + str(guess))
+    print pd.DataFrame(sorted_guesses.items(), columns = ["instrument", "percent chance"])
+
+    return audio_mfcc_matrix_normal
+
+    # #prediction with probabilities
+
+
+    # predictions2 = clf.predict_proba(audio_mfcc_matrix_normal)
+    # sorted_guesses, guess2 = instrument2(predictions2)
+    # print pd.DataFrame(sorted_guesses.items(), columns = ["instrument", "percent chance"])
+    # print ("guess2: " + str(guess2))
+
+
+
+
+    # #method 1
     
-    print (predictions2)
-    mode_predictions = mode(predictions2)
-    print (mode_predictions[0])
-    print (TARGET_NAMES[int(mode_predictions[0])])
+    # plt.figure()
+    # plt.subplot(1,2,1)
+    # plt.plot(np.arange(len(TARGET_NAMES)), predictions, "o")
+    # plt.xticks(np.arange(len(TARGET_NAMES)), TARGET_NAMES, rotation="vertical")
 
-    plt.figure()
-    plt.subplot(1,2,1)
-    plt.plot(predictions2, range(0, len(TARGET_NAMES)), "o")
-    plt.xticks(np.arange(len(TARGET_NAMES)), TARGET_NAMES, rotation="vertical")
+    # #method 2
 
-    print  (predictions.shape)
-    avg_predictions = predictions.mean(axis=0)
-    print (avg_predictions.shape)
-
-    plt.subplot(1,2,2)
-    plt.plot(np.arange(len(TARGET_NAMES)), avg_predictions, "o")
-    plt.xticks(np.arange(len(TARGET_NAMES)), TARGET_NAMES, rotation="vertical")
-    plt.show()
-
-    max_prediction = np.argmax(avg_predictions)
-    print ("likely: " + str(max_prediction))
-    print (TARGET_NAMES[max_prediction])
- 
-
+    # plt.subplot(1,2,2)
+    # plt.plot(np.arange(len(TARGET_NAMES)), avg_predictions, "o")
+    # plt.xticks(np.arange(len(TARGET_NAMES)), TARGET_NAMES, rotation="vertical")
+    # plt.show()
 
 
 
