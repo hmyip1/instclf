@@ -21,8 +21,8 @@ from collections import OrderedDict
 
 
 
-MODEL_PATH = "/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"
-TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
+environ[MODEL_PATH] = "/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"
+environ[TARGET_NAMES] = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
 def get_multitracks():
