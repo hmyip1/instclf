@@ -15,7 +15,6 @@ addons:
   apt:
     packages:
       - sox
-      - medleydb
 
 before_install:
   - bash .travis_dependencies.sh
