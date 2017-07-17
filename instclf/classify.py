@@ -1,6 +1,5 @@
 import numpy as np
-import librosa 
-import pyyaml
+import librosa
 import six
 from os import environ
 environ["MEDLEYDB_PATH"] = "/Datasets/MedleyDB"
@@ -21,8 +20,8 @@ from collections import OrderedDict
 
 
 
-environ[MODEL_PATH] = "/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"
-environ[TARGET_NAMES] = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
+MODEL_PATH = "/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"
+TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
 def get_multitracks():
