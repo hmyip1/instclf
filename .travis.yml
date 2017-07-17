@@ -27,6 +27,7 @@ install:
   - pip install coveralls
   - pip install git+https://github.com/marl/medleydb.git
   - pip install -e .
+  - pip install pandas
 
 # command to run tests
 script: nosetests --with-coverage --cover-erase --cover-package=instclf -v -w tests/
