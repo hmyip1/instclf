@@ -110,15 +110,18 @@ def standardize_matrix(matrix, mean, std):
 
 
 
-def create_data(mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
+def create_data(train_mfcc_matrix=None, train_label_matrix=None,
+    mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
     mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
     mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
     label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy", 
     target_names=TARGET_NAMES):
 
+    if train_mfcc_matrix is None and train_label_matrix is None:
+        train_mfcc_matrix, train_label_matrix = mfcc_and_label()
+
     #get labels and mfccs of all multitracks without bleed
-    train_mfcc_matrix, train_label_matrix = mfcc_and_label()
-    
+        
 
     #STANDARDIZING MFCC MATRIX
 
@@ -156,18 +159,15 @@ def predict_mode(classifier, matrix):
     return predictions1
 
 def instrument(predictions):
-    print predictions
-    
     
     unique_elements, counts = np.unique(predictions, return_counts=True)
     print unique_elements
     frequency_predictions = [0 for i in range(len(TARGET_NAMES))]
-    print frequency_predictions
-    print counts
+    # print frequency_predictions
+    # print counts
     
     for i, j in zip(unique_elements, range(len(counts))):
         frequency_predictions[int(i)] = counts[int(j)]/float(len(predictions))
-        print frequency_predictions
 
     print frequency_predictions
     guess_dict = {}
@@ -176,6 +176,8 @@ def instrument(predictions):
         guess_dict[name] = round(probability, 3)
 
     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
+    print sorted_guesses
+    print type(sorted_guesses)
 
     mode_predictions = mode(predictions)
     guess = TARGET_NAMES[int(mode_predictions[0])]
@@ -222,9 +224,12 @@ def real_data(audio_file,
     predictions1 = predict_mode(clf, audio_mfcc_matrix_normal)
     guess, sorted_guesses = instrument(predictions1)
     print ("guess1: " + str(guess))
-    print pd.DataFrame(sorted_guesses.items(), columns = ["instrument", "percent chance"])
+    guess_chart = pd.DataFrame(sorted_guesses.items(), columns = ["instrument", "percent chance"])
+    print guess_chart
+    print type(guess_chart)
+    print guess_chart.shape
 
-    return audio_mfcc_matrix_normal
+    return guess_chart
 
     # #prediction with probabilities
 

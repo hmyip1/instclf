@@ -4,19 +4,17 @@ from sklearn.ensemble import forest
 from sklearn.ensemble.forest import ForestClassifier
 import os
 import numpy as np
-import medleydb as mdb
-import sklearn
 from sklearn.externals import joblib
-import sox
-import tempfile as tmp
-import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import mode
 import json
 from collections import namedtuple
 import operator
-import pandas as pd
 from collections import OrderedDict
+import pandas as pd
+from pandas import DataFrame
+
+TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
 def relpath(f):
@@ -48,17 +46,6 @@ class TestComputeMFCCAndLabelMatrix(unittest.TestCase):
 		with open("/Users/hmyip/Documents/repositories/instclf/tests/data/test_file_dict.json") as fp:
 			file_dict = json.load(fp)
 
-		# {'piano': ["tests/data/piano2.wav"],
-		# 'violin': ["tests/data/piano2.wav"],
-		# 'drum set': ["tests/data/piano2.wav"],
-		# 'distorted electric guitar': ["tests/data/piano2.wav"],
-		# 'female singer': ["tests/data/piano2.wav"],
-		# 'male singer': ["tests/data/piano2.wav"],
-		# 'clarinet': ["tests/data/piano2.wav"],
-		# 'flute': ["tests/data/piano2.wav"],
-		# 'trumpet': ["tests/data/piano2.wav"],
-		# 'tenor saxophone': ["tests/data/piano2.wav"]}
-
 		actual_mfcc, actual_label = classify.mfcc_and_label(file_dict)
 		self.assertEqual(actual_mfcc.shape[0], actual_label.shape[0])
 
@@ -71,6 +58,22 @@ class TestStandardizeMatrix(unittest.TestCase):
 
 		actual_standardized_matrix = classify.standardize_matrix(matrix=matrix, mean=mean, std=std)
 		self.assertEqual(actual_standardized_matrix.shape, matrix.shape)
+
+
+class TestCreatingData(unittest.TestCase):
+	def test_create_data(self):
+		mfcc_matrix = np.load(relpath("data/test_mfcc_matrix.npy"))
+		label_matrix = np.load(relpath("data/test_label_matrix.npy"))
+		mean_path = relpath("data/test_mfcc_mean.npy")
+		std_path = relpath("data/test_mfcc_std.npy")
+		mfcc_path = relpath("data/test_mfcc_matrix.npy")
+		label_path = relpath("data/test_label_matrix.npy")
+
+		create_data = classify.create_data(train_mfcc_matrix=mfcc_matrix, train_label_matrix=label_matrix, 
+			mfcc_means_path=mean_path, mfcc_std_path=std_path, mfcc_matrix_path=mfcc_path, label_matrix_path=label_path)
+
+		self.assertTrue(os.path.exists(mfcc_path))
+		self.assertTrue(os.path.exists(label_path))
 
 
 class TestTrain(unittest.TestCase):
@@ -104,12 +107,26 @@ class TestInstrumentGuess(unittest.TestCase):
 		clf = joblib.load(model_save_path)
 		matrix_normal = np.load(relpath("/Users/hmyip/Documents/repositories/instclf/tests/data/piano_matrix.npy"))
 		predictions = classify.predict_mode(clf, matrix_normal)
+
 		sorted_guesses = {}
 		actual_instrument, sorted_guesses = classify.instrument(predictions)
 		self.assertEqual(actual_instrument, "piano")
+		self.assertTrue(isinstance(sorted_guesses, OrderedDict))
+		for i in range(len(TARGET_NAMES)-1):
+			self.assertTrue(sorted_guesses.values()[i] >= sorted_guesses.values()[i+1])
 
 
+class TestRealData(unittest.TestCase):
+	def test_classifier_on_real_audio_data(self):
+		audio = relpath("data/piano2.wav")
+		mean_path = relpath("data/test_mfcc_mean.npy")
+		std_path = relpath("data/test_mfcc_std.npy")
 
+		guess_chart = classify.real_data(audio_file=audio)
+		self.assertTrue(isinstance(guess_chart, DataFrame))
+		self.assertEqual(guess_chart.shape[0], len(TARGET_NAMES))
+		self.assertEqual(guess_chart.shape[1], 2)
+		
 # class TestPredictProbability(unittest.TestCase):
 # 	def test_predict_using_prob(self):
 # 		model_save_path = relpath("data/model.pkl")
