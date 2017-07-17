@@ -162,7 +162,7 @@ def predict_mode(classifier, matrix):
 def instrument(predictions):
     
     unique_elements, counts = np.unique(predictions, return_counts=True)
-    print unique_elements
+    print (unique_elements)
     frequency_predictions = [0 for i in range(len(TARGET_NAMES))]
     # print frequency_predictions
     # print counts
@@ -170,15 +170,15 @@ def instrument(predictions):
     for i, j in zip(unique_elements, range(len(counts))):
         frequency_predictions[int(i)] = counts[int(j)]/float(len(predictions))
 
-    print frequency_predictions
+    print (frequency_predictions)
     guess_dict = {}
     instrument_probability = zip(TARGET_NAMES, frequency_predictions)
     for name, probability in instrument_probability:
         guess_dict[name] = round(probability, 3)
 
     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
-    print sorted_guesses
-    print type(sorted_guesses)
+    print (sorted_guesses)
+    print (type(sorted_guesses))
 
     mode_predictions = mode(predictions)
     guess = TARGET_NAMES[int(mode_predictions[0])]
@@ -226,9 +226,7 @@ def real_data(audio_file,
     guess, sorted_guesses = instrument(predictions1)
     print ("guess1: " + str(guess))
     guess_chart = pd.DataFrame(sorted_guesses.items(), columns = ["instrument", "percent chance"])
-    print guess_chart
-    print type(guess_chart)
-    print guess_chart.shape
+    print (guess_chart)
 
     return guess_chart
 
