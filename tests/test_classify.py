@@ -25,7 +25,7 @@ MFCC_PATH = relpath("data/test_mfcc_matrix.npy")
 MFCC_MEAN_PATH = relpath("data/test_mfcc_mean.npy")
 MFCC_STD_PATH = relpath("data/test_mfcc_std.npy")
 LABEL_PATH = relpath("data/test_label_matrix.npy")
-AUDIO_PATH = relpath("data/piano2.wav")
+AUDIO_PATH = relpath("piano2.wav")
 MODEL_PATH = relpath("data/model.pkl")
 
 
@@ -97,7 +97,8 @@ class TestTrain(unittest.TestCase):
 		if os.path.exists(MODEL_PATH):
 			os.remove(MODEL_PATH)
 
-		actual_clf = classify.train(n_estimators=10, mfcc_matrix_path=MFCC_PATH, label_matrix_path=LABEL_PATH, model_save_path=MODEL_PATH)
+		actual_clf = classify.train(n_estimators=10, 
+			mfcc_matrix_path=MFCC_PATH, label_matrix_path=LABEL_PATH, model_save_path=MODEL_PATH)
 		self.assertTrue(isinstance(actual_clf, ForestClassifier))
 		self.assertTrue(os.path.exists(MODEL_PATH))
 

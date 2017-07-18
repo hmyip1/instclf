@@ -19,8 +19,6 @@ from collections import OrderedDict
 
 
 
-
-MODEL_PATH = "instclf/resources/instrument_classifier.pkl"
 TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
@@ -53,11 +51,11 @@ def get_multitracks():
 # def compute_features():
 #     y, fs = librosa.load(temp_fpath.name)
 
-#     mfcc = librosa.feature.mfcc(y, sr-fs, n_mfcc=40)
-#     mfcc_delta = librosa.feature.delta(mfcc)
-#     mfcc_delta_delta = librosa.feature.delta(mfcc, order=2)
+#     mfcc = np.array(librosa.feature.mfcc(y, sr=fs, n_mfcc=40))
+#     mfcc_delta = np.array(librosa.feature.delta(mfcc))
+#     mfcc_delta_delta = np.array(librosa.feature.delta(mfcc, order=2))
 
-#     M = np.vstack(mfcc, mfcc_delta, mfcc_delta_delta)
+#     M = np.vstack((mfcc, mfcc_delta, mfcc_delta_delta))
 
 #     return M, y, fs
 
@@ -162,7 +160,7 @@ def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=N
 
 def train(n_estimators, mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
     label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy",
-    model_save_path=MODEL_PATH):
+    model_save_path="instclf/resources/instrument_classifier.pkl"):
 
     train_mfcc_matrix_normal = np.load(mfcc_matrix_path)
     train_label_matrix = np.load(label_matrix_path)
