@@ -246,7 +246,7 @@ def real_data(audio_file,
     guess, guess_dict = instrument(predictions1)
     print ("guess1: " + str(guess))
 
-    sorted_guesses = sorted(guess_dict.iteritems(), reverse=True, key=lambda(k,v): (v,k))
+    sorted_guesses = sorted(guess_dict.iteritems(), key=lambda (k, v): (v, k), reverse=True)
 
     for key, value in sorted_guesses:
         print ("%s: %s" % (key, value))
