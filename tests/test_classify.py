@@ -25,7 +25,7 @@ MFCC_PATH = relpath("data/test_mfcc_matrix.npy")
 MFCC_MEAN_PATH = relpath("data/test_mfcc_mean.npy")
 MFCC_STD_PATH = relpath("data/test_mfcc_std.npy")
 LABEL_PATH = relpath("data/test_label_matrix.npy")
-AUDIO_PATH = relpath("data/piano2.wav")
+AUDIO_PATH = relpath("tests/data/piano2.wav")
 MODEL_PATH = relpath("data/model.pkl")
 
 
@@ -37,6 +37,13 @@ class Test(unittest.TestCase):
 
 # class TestGetMultitracks(unittest.TestCase):
 # 	def():
+
+
+# class TestComputeFeatures(unittest.TestCase):
+# 	def test_compute_feature_matrix(self):
+# 		M = classify.compute_features()
+# 		self.assertEqual(M.shape[0], 120)
+
 
 
 class TestNormalizeAudioComputeMFCC(unittest.TestCase):

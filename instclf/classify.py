@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 
 
-MODEL_PATH = "/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"
+MODEL_PATH = "instclf/resources/instrument_classifier.pkl"
 TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
 
 
@@ -77,7 +77,7 @@ def normalize_MFCC(file):
     return M, y, fs
 
 
-def mfcc_and_label(file_dict=None):
+def mfcc_and_label(n_instruments=None, file_dict=None):
 
     if file_dict is None:
         file_dict = get_multitracks()
@@ -87,7 +87,12 @@ def mfcc_and_label(file_dict=None):
 
     label_index = 0
 
-    for label in TARGET_NAMES:
+    if n_instruments is None:
+        instrument_labels = TARGET_NAMES
+    else:
+        instrument_labels = TARGET_NAMES[n_instruments:]
+
+    for label in instrument_labels:
         
         instrument_mfcc_list_train = []
         instrument_label_list_train = []
@@ -128,7 +133,7 @@ def standardize_matrix(matrix, mean, std):
 
 
 
-def create_data(train_mfcc_matrix=None, train_label_matrix=None,
+def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=None,
     mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
     mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
     mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
@@ -136,7 +141,7 @@ def create_data(train_mfcc_matrix=None, train_label_matrix=None,
     target_names=TARGET_NAMES):
 
     if train_mfcc_matrix is None and train_label_matrix is None:
-        train_mfcc_matrix, train_label_matrix = mfcc_and_label()
+        train_mfcc_matrix, train_label_matrix = mfcc_and_label(n_instruments)
 
     #get labels and mfccs of all multitracks without bleed
         
@@ -223,8 +228,8 @@ def instrument(predictions):
 
 
 def real_data(audio_file, 
-    mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy",
-    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy"):
+    mfcc_means_path="instclf/resources/mfcc_means.npy",
+    mfcc_std_path="instclf/resources/mfcc_std.npy"):
     
     clf = joblib.load(MODEL_PATH)
 
