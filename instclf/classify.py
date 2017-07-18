@@ -199,7 +199,6 @@ def instrument(predictions):
     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
     print (sorted_guesses.items())
     print (type(np.array(sorted_guesses.items())))
-    print (np.array(sorted_guesses.items())).shape
 
     mode_predictions = mode(predictions)
     guess = TARGET_NAMES[int(mode_predictions[0])]
@@ -247,7 +246,7 @@ def real_data(audio_file,
     predictions1 = predict_mode(clf, audio_mfcc_matrix_normal)
     guess, sorted_guesses = instrument(predictions1)
     print ("guess1: " + str(guess))
-    guess_chart = pd.DataFrame(data=np.array(sorted_guesses.items()), columns = ["instrument", "percent chance"])
+    guess_chart = pd.DataFrame(data=np.array(sorted_guesses.items()), columns = ["instrument", "percent chance"], copy=False)
     print (guess_chart)
 
     return guess_chart
