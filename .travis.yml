@@ -29,8 +29,8 @@ install:
   - pip install -e .
   - pip install pandas
   - pwd
-  - ls instclf/*
-  - ls instclf/tests/*
+  - ls tests/data/*
+  - ls tests/*
 
 # command to run tests
 script: nosetests --with-coverage --cover-erase --cover-package=instclf -v -w tests/
