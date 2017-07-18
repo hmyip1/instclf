@@ -227,9 +227,10 @@ def instrument(predictions):
 
 def real_data(audio_file, 
     mfcc_means_path="instclf/resources/mfcc_means.npy",
-    mfcc_std_path="instclf/resources/mfcc_std.npy"):
+    mfcc_std_path="instclf/resources/mfcc_std.npy", 
+    model_save_path="instclf/resources/instrument_classifier.pkl"):
     
-    clf = joblib.load(MODEL_PATH)
+    clf = joblib.load(model_save_path)
 
     train_mfcc_means = np.load(mfcc_means_path)
     train_mfcc_std = np.load(mfcc_std_path)

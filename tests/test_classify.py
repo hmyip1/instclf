@@ -132,7 +132,7 @@ class TestInstrumentGuess(unittest.TestCase):
 class TestRealData(unittest.TestCase):
 	def test_classifier_on_real_audio_data(self):
 
-		guess_chart = classify.real_data(audio_file=AUDIO_PATH)
+		guess_chart = classify.real_data(audio_file=AUDIO_PATH, model_save_path=MODEL_PATH)
 		self.assertTrue(isinstance(guess_chart, DataFrame))
 		self.assertEqual(guess_chart.shape[0], len(TARGET_NAMES))
 		self.assertEqual(guess_chart.shape[1], 2)
