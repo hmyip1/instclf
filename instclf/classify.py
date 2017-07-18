@@ -246,7 +246,7 @@ def real_data(audio_file,
     predictions1 = predict_mode(clf, audio_mfcc_matrix_normal)
     guess, sorted_guesses = instrument(predictions1)
     print ("guess1: " + str(guess))
-    guess_chart = pd.DataFrame(sorted_guesses.items(), columns = ["instrument", "percent chance"])
+    guess_chart = pd.DataFrame(data=np.array(sorted_guesses.items()), columns = ["instrument", "percent chance"])
     print (guess_chart)
 
     return guess_chart
