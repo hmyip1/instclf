@@ -25,7 +25,7 @@ MFCC_PATH = relpath("data/test_mfcc_matrix.npy")
 MFCC_MEAN_PATH = relpath("data/test_mfcc_mean.npy")
 MFCC_STD_PATH = relpath("data/test_mfcc_std.npy")
 LABEL_PATH = relpath("data/test_label_matrix.npy")
-AUDIO_PATH = relpath("tests/data/piano2.wav")
+AUDIO_PATH = relpath("data/piano2.wav")
 MODEL_PATH = relpath("data/model.pkl")
 
 
@@ -65,7 +65,7 @@ class TestComputeMFCCAndLabelMatrix(unittest.TestCase):
 		with open(file_dict_path) as fp:
 			file_dict = json.load(fp)
 
-		actual_mfcc, actual_label = classify.mfcc_and_label(file_dict)
+		actual_mfcc, actual_label = classify.mfcc_and_label(file_dict=file_dict)
 		self.assertEqual(actual_mfcc.shape[0], actual_label.shape[0])
 
 
