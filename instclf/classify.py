@@ -251,7 +251,6 @@ def real_data(audio_file,
     for key, value in sorted_guesses:
         print ("%s: %s" % (key, value))
 
-    print type(sorted_guesses)
     # guess_chart = pd.DataFrame(data=sorted_guesses.as_matrix, columns = ["instrument", "percent chance"], copy=False)
     # print (guess_chart)
     return sorted_guesses
