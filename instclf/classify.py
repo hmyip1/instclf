@@ -196,13 +196,12 @@ def instrument(predictions):
     for name, probability in instrument_probability:
         guess_dict[name] = round(probability, 3)
 
-    sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
-    print (sorted_guesses.items())
-    print (type(np.array(sorted_guesses.items())))
+    # sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
 
     mode_predictions = mode(predictions)
     guess = TARGET_NAMES[int(mode_predictions[0])]
-    return guess, sorted_guesses
+
+    return guess, guess_dict
 
 # def predict_prob(classifier, matrix):
 #     predictions2 = classifier.predict_proba(matrix)
@@ -244,12 +243,18 @@ def real_data(audio_file,
 
     #prediction with mode
     predictions1 = predict_mode(clf, audio_mfcc_matrix_normal)
-    guess, sorted_guesses = instrument(predictions1)
+    guess, guess_dict = instrument(predictions1)
     print ("guess1: " + str(guess))
-    guess_chart = pd.DataFrame(data=np.array(sorted_guesses.items()), columns = ["instrument", "percent chance"], copy=False)
-    print (guess_chart)
 
-    return guess_chart
+    sorted_guesses = sorted(guess_dict.iteritems(), reverse=True, key=lambda (k,v): (v,k))
+
+    for key, value in sorted_guesses:
+        print ("%s: %s" % (key, value))
+
+    print type(sorted_guesses)
+    # guess_chart = pd.DataFrame(data=sorted_guesses.as_matrix, columns = ["instrument", "percent chance"], copy=False)
+    # print (guess_chart)
+    return sorted_guesses
 
     # #prediction with probabilities
 
