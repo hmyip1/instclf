@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
 class TestNormalizeAudioComputeMFCC(unittest.TestCase):
 	def test_normalize_audio_compute_MFCC(self):
 		
-		fpath = AUDIO_PATH
+		fpath = relpath("data/piano2.wav")
 		temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
 		actual_M, actual_y, actual_fs = classify.normalize_MFCC(fpath)
 		self.assertEqual(actual_M.shape[0], 40)
@@ -60,10 +60,24 @@ class TestNormalizeAudioComputeMFCC(unittest.TestCase):
 
 class TestComputeMFCCAndLabelMatrix(unittest.TestCase):
 	def test_compute_MFCC_and_label(self):
-		file_dict_path = relpath("data/test_file_dict.json")
 
-		with open(file_dict_path) as fp:
-			file_dict = json.load(fp)
+		audio_path = relpath("data/piano2.wav")
+
+		file_dict = {"tenor saxophone": [audio_path], 
+		"male singer": [audio_path], 
+		"distorted electric guitar": [audio_path], 
+		"female singer": [audio_path], 
+		"drum set": [audio_path], 
+		"violin": [audio_path], 
+		"piano": [audio_path], 
+		"flute": [audio_path], 
+		"trumpet": [audio_path], 
+		"clarinet": [audio_path]}
+
+		# file_dict_path = relpath("data/test_file_dict.json")
+
+		# with open(file_dict_path) as fp:
+		# 	file_dict = json.load(fp)
 
 		actual_mfcc, actual_label = classify.mfcc_and_label(file_dict=file_dict)
 		self.assertEqual(actual_mfcc.shape[0], actual_label.shape[0])
@@ -132,7 +146,10 @@ class TestInstrumentGuess(unittest.TestCase):
 class TestRealData(unittest.TestCase):
 	def test_classifier_on_real_audio_data(self):
 
-		guess_chart = classify.real_data(audio_file=AUDIO_PATH, model_save_path=MODEL_PATH)
+		guess_chart = classify.real_data(audio_file=AUDIO_PATH, 
+			mfcc_means_path=MFCC_MEAN_PATH,
+			mfcc_std_path=MFCC_STD_PATH,
+			model_save_path=MODEL_PATH)
 		self.assertTrue(isinstance(guess_chart, DataFrame))
 		self.assertEqual(guess_chart.shape[0], len(TARGET_NAMES))
 		self.assertEqual(guess_chart.shape[1], 2)
