@@ -197,8 +197,9 @@ def instrument(predictions):
         guess_dict[name] = round(probability, 3)
 
     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
-    print (sorted_guesses)
-    print (type(sorted_guesses))
+    print (sorted_guesses.items())
+    print (type(np.array(sorted_guesses.items())))
+    print (np.array(sorted_guesses.items())).shape
 
     mode_predictions = mode(predictions)
     guess = TARGET_NAMES[int(mode_predictions[0])]
@@ -226,9 +227,9 @@ def instrument(predictions):
 
 
 def real_data(audio_file, 
-    mfcc_means_path="instclf/resources/mfcc_means.npy",
-    mfcc_std_path="instclf/resources/mfcc_std.npy", 
-    model_save_path="instclf/resources/instrument_classifier.pkl"):
+    mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy",
+    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
+    model_save_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"):
     
     clf = joblib.load(model_save_path)
 
