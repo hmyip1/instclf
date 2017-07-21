@@ -2,8 +2,6 @@ import numpy as np
 import librosa
 import six
 from os import environ
-environ["MEDLEYDB_PATH"] = "/Datasets/MedleyDB"
-import medleydb as mdb
 import sklearn
 from sklearn.externals import joblib
 import os
@@ -16,69 +14,48 @@ from collections import namedtuple
 import operator
 import pandas as pd
 from collections import OrderedDict
+import json
 
 
 
-TARGET_NAMES = ["piano", "violin", "drum set", "distorted electric guitar", "female singer", "male singer", "clarinet", "flute", "trumpet", "tenor saxophone"]
+TARGET_NAMES = ["piano", "violin", "drum_set", "distorted_electric_guitar", "female_singer", "male_singer", "clarinet", "flute", "trumpet", "tenor_saxophone"]
 
+#STEP 1------------------------------------
 
-def get_multitracks():
-    loader = mdb.load_all_multitracks()
-    no_bleed_mtracks = []
-    for mtrack in loader:
-        if not mtrack.has_bleed:
-            no_bleed_mtracks.append(mtrack)
-
-    valid_labels = mdb.multitrack.get_valid_instrument_labels()
-
-    file_dict = {} #dictionary of multitrack without bleed
-
-    for label in valid_labels:
-        label_list = list(mdb.utils.get_files_for_instrument(label, multitrack_list=no_bleed_mtracks))
-
-        if len(label_list) == 0:
-            continue
-        file_dict[label] = label_list
-
-    label_values = sorted(list(file_dict.keys()))
-    np.save("label_values.npy", label_values)
-
-    print (file_dict)
+def get_data():
+    fp = "/Users/hmyip/Documents/repositories/instclf/instclf"
+    os.path.join("/Users/hmyip/Documents/repositories/instclf")
+    with open('file_dict.json', 'r') as fp:
+        file_dict = json.load(fp)
     return file_dict
 
 
+def compute_features(file):
+    y, fs = librosa.load(file)
 
-# def compute_features():
-#     y, fs = librosa.load(temp_fpath.name)
+    M = np.array(librosa.feature.mfcc(y, sr=fs, n_mfcc=40))
+    # mfcc_delta = np.array(librosa.feature.delta(mfcc))
+    # mfcc_delta_delta = np.array(librosa.feature.delta(mfcc, order=2))
 
-#     mfcc = np.array(librosa.feature.mfcc(y, sr=fs, n_mfcc=40))
-#     mfcc_delta = np.array(librosa.feature.delta(mfcc))
-#     mfcc_delta_delta = np.array(librosa.feature.delta(mfcc, order=2))
+    # M = np.vstack((mfcc, mfcc_delta, mfcc_delta_delta))
 
-#     M = np.vstack((mfcc, mfcc_delta, mfcc_delta_delta))
+    return M, y, fs
 
-#     return M, y, fs
-
-def normalize_MFCC(file):
+def normalize_audio(file):
     temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
     tfm = sox.Transformer()
     tfm.norm(db_level=-6)
     tfm.silence()
     tfm.build(file, temp_fpath.name)
 
-    # M, y, fs = compute_features()
-
-    y, fs = librosa.load(temp_fpath.name)
 
 
-    M = librosa.feature.mfcc(y, sr=fs, n_mfcc=40)
-    return M, y, fs
-
+#STEP 2------------------------------------
 
 def mfcc_and_label(n_instruments=None, file_dict=None):
 
     if file_dict is None:
-        file_dict = get_multitracks()
+        file_dict = get_data()
 
     train_mfcc_list = []
     train_label_list = []
@@ -98,7 +75,8 @@ def mfcc_and_label(n_instruments=None, file_dict=None):
         # loop over files for instruments
         for fpath in file_dict[label]:
 
-            M, y, fs = normalize_MFCC(fpath)
+            normalize_audio(fpath)
+            M, y, fs = compute_features(fpath)
 
             lab = np.zeros((len(M[0]), )) + label_index
             instrument_mfcc_list_train.append(M)
@@ -131,6 +109,7 @@ def standardize_matrix(matrix, mean, std):
 
 
 
+#STEP 3------------------------------------
 def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=None,
     mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
     mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
@@ -140,9 +119,6 @@ def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=N
 
     if train_mfcc_matrix is None and train_label_matrix is None:
         train_mfcc_matrix, train_label_matrix = mfcc_and_label(n_instruments)
-
-    #get labels and mfccs of all multitracks without bleed
-        
 
     #STANDARDIZING MFCC MATRIX
 
@@ -158,9 +134,11 @@ def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=N
 
 
 
+
+#STEP 4------------------------------------
 def train(n_estimators, mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
     label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy",
-    model_save_path="instclf/resources/instrument_classifier.pkl"):
+    model_save_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"):
 
     train_mfcc_matrix_normal = np.load(mfcc_matrix_path)
     train_label_matrix = np.load(label_matrix_path)
@@ -174,6 +152,9 @@ def train(n_estimators, mfcc_matrix_path="/Users/hmyip/Documents/repositories/in
 
     return clf
             
+
+
+
 
 def predict_mode(classifier, matrix):
     predictions1 = classifier.predict(matrix)
@@ -236,7 +217,8 @@ def real_data(audio_file,
 
     # normalizing volume and compute MFCC
 
-    M, y, fs = normalize_MFCC(audio_file)
+    normalize_audio(audio_file)
+    M, y, fs = compute_features(audio_file)
     
     audio_mfcc_matrix_normal = standardize_matrix(M.T, train_mfcc_means, train_mfcc_std)
     # np.save("/Users/hmyip/Documents/repositories/instclf/tests/data/piano_matrix.npy", audio_mfcc_matrix_normal)
