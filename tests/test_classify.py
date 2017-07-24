@@ -112,23 +112,13 @@ class TestTrain(unittest.TestCase):
 		self.assertTrue(os.path.exists(MODEL_PATH))
 
 
-
-class TestPredictMode(unittest.TestCase):
-	def test_predict_using_modes(self):
-		model_save_path = MODEL_PATH
-		clf = joblib.load(model_save_path)
-		matrix_normal = np.load(relpath("data/test_mfcc_normal.npy"))
-
-		actual_prediction = classify.predict_mode(clf, matrix_normal)
-		self.assertEqual(actual_prediction.shape[0], matrix_normal.shape[0])
-
 class TestInstrumentGuess(unittest.TestCase):
 	def test_instrument_using_mode_predictions(self):
 		audio = AUDIO_PATH
 		model_save_path = MODEL_PATH
 		clf = joblib.load(MODEL_PATH)
 		matrix_normal = np.load(relpath("data/piano_matrix.npy"))
-		predictions = classify.predict_mode(clf, matrix_normal)
+		predictions = clf.predict(matrix_normal)
 
 		actual_instrument, guess_dict = classify.instrument(predictions)
 		self.assertTrue(actual_instrument in TARGET_NAMES)

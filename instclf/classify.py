@@ -304,31 +304,6 @@ def train(n_estimators, mfcc_matrix_path=MFCC_MATRIX_PATH,
             
 
 
-#STEP 4------------------------------------
-
-def predict_mode(classifier, matrix):
-
-    """
-    Makes prediction for each slice of features.
-
-    Parameters
-    ----------
-    classifier: clf
-        classification model
-
-    matrix: array
-        matrix of features that will be classified
-
-    Returns
-    -------
-    predictions: array
-        1D vector, each element is the index of TARGET_NAMES that the model predicts 
-        from that slice of features.
-    """
-
-
-    predictions = classifier.predict(matrix)
-    return predictions
 
 def instrument(predictions):
 
@@ -359,8 +334,6 @@ def instrument(predictions):
     instrument_probability = zip(TARGET_NAMES, frequency_predictions)
     for name, probability in instrument_probability:
         guess_dict[name] = round(probability, 3)
-
-    # sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
 
     mode_predictions = mode(predictions)
     guess = TARGET_NAMES[int(mode_predictions[0])]
@@ -414,7 +387,7 @@ def real_data(audio_file,
     # np.save("/Users/hmyip/Documents/repositories/instclf/tests/data/piano_matrix.npy", audio_mfcc_matrix_normal)
 
     #prediction with mode
-    predictions = predict_mode(clf, audio_mfcc_matrix_normal)
+    predictions = clf.predict(audio_mfcc_matrix_normal)
     guess, guess_dict = instrument(predictions)
     print ("guess1: " + str(guess))
 
