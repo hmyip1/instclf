@@ -20,17 +20,56 @@ import json
 
 TARGET_NAMES = ["piano", "violin", "drum_set", "distorted_electric_guitar", "female_singer", "male_singer", "clarinet", "flute", "trumpet", "tenor_saxophone"]
 
+MFCC_MEANS_PATH = "resources/mfcc_means.npy"
+MFCC_STD_PATH = "resources/mfcc_std.npy"
+MFCC_MATRIX_PATH = "resources/mfcc_matrix.npy"
+LABEL_MATRIX_PATH = "resources/label_matrix.npy"
+MODEL_SAVE_PATH = "resources/instrument_classifier.pkl"
+
+
+
 #STEP 1------------------------------------
 
 def get_data():
-    fp = "/Users/hmyip/Documents/repositories/instclf/instclf"
-    os.path.join("/Users/hmyip/Documents/repositories/instclf")
+
+    """
+    Load the dictionary of data from MedleyDB and Philharmonia.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    file_dict: dictionary
+        dictionary of instrument and filepaths of examples from MedleyDB and Philharmonia
+    """
+
     with open('file_dict.json', 'r') as fp:
         file_dict = json.load(fp)
     return file_dict
 
 
 def compute_features(file):
+
+    """
+    Compute the features of an audio file and return a stacked matrix
+
+    Parameters
+    ----------
+    file: str
+        file path of audio
+
+    Returns
+    -------
+    M: array
+        Matrix of features vs time
+    y: array
+        audio time series
+    fs: int
+        sampling rate
+    """
+
     y, fs = librosa.load(file)
 
     M = np.array(librosa.feature.mfcc(y, sr=fs, n_mfcc=40))
@@ -42,6 +81,20 @@ def compute_features(file):
     return M, y, fs
 
 def normalize_audio(file):
+
+    """
+    Normalize volume and remove silence from audio file.
+
+    Parameters
+    ----------
+    file: str
+        file path of audio
+
+    Returns
+    -------
+    None
+    """
+
     temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
     tfm = sox.Transformer()
     tfm.norm(db_level=-6)
@@ -50,9 +103,32 @@ def normalize_audio(file):
 
 
 
-#STEP 2------------------------------------
-
 def mfcc_and_label(n_instruments=None, file_dict=None):
+    """
+    Retrieves data, loops over every file for each instrument in TARGET NAMES 
+    to normalize audio and compute features. Matrices are concatenated into a 
+    master matrix across all audio files. Returns the MFCC and label matrix.
+
+
+    Parameters
+    ----------
+    n_instruments: int
+        Specifies which instruments of TARGET NAMES to retrieve data - 
+        purpose is to shorten data fetching while fixing code.
+
+    file_dict: dictionary
+        dictionary of instrument and filepaths of examples from MedleyDB and Philharmonia
+ 
+
+    Returns
+    -------
+    train_mfcc_matrix: array
+        Matrix of features across all training examples
+
+    train_label_matrix: array
+        Matrix of labels across all training examles
+    """
+
 
     if file_dict is None:
         file_dict = get_data()
@@ -72,7 +148,7 @@ def mfcc_and_label(n_instruments=None, file_dict=None):
         instrument_mfcc_list_train = []
         instrument_label_list_train = []
 
-        # loop over files for instruments
+        # loop over files for each instrument
         for fpath in file_dict[label]:
 
             normalize_audio(fpath)
@@ -95,27 +171,76 @@ def mfcc_and_label(n_instruments=None, file_dict=None):
     train_mfcc_matrix = np.hstack(train_mfcc_list).T
     train_label_matrix = np.hstack(train_label_list)
 
-    print ("shape1: " + str(train_mfcc_matrix.shape))
-    print ("shape1: " + str(train_label_matrix.shape))
-
     return (train_mfcc_matrix, train_label_matrix)
+
 
 
 def standardize_matrix(matrix, mean, std):
 
+    """
+    Standardizes a matrix
+
+    Paramters
+    ---------
+    matrix: array
+        matrix that is being normalized.
+
+    mean: array
+        Row vector containing the mean of each column.
+        
+    std: array
+        standard deviation of of matrix
+    """
+
     matrix_normal = (matrix - mean)/std
+    
     return matrix_normal
 
 
 
 
-#STEP 3------------------------------------
+#STEP 2 ------------------------------------
 def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=None,
-    mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy", 
-    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
-    mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
-    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy", 
+    mfcc_means_path=MFCC_MEANS_PATH, 
+    mfcc_std_path=MFCC_STD_PATH, 
+    mfcc_matrix_path=MFCC_MATRIX_PATH, 
+    label_matrix_path=LABEL_MATRIX_PATH, 
     target_names=TARGET_NAMES):
+    """
+    Retrieves feature and label matrix, standardizes the feature matrix,
+    and saves the normalized feature matrix and label matrix.
+
+    Paramters
+    ---------
+    n_instrumnets: int
+
+    train_mfcc_matrix: array
+        feature matrix
+
+    train_label_matrix: array
+        label matrix
+
+    mfcc_means_path: str
+        file path to mean of feature matrix
+
+    mfcc_std_path: str
+        file path to standard deviation of feature matrix
+
+    mfcc_matrix_path: str
+        file path to feature matrix
+
+    label_matrix_path: str
+        file path to label matrix
+
+    TARGET_NAMES: array
+        vector of instruments being dealt with
+
+
+    Returns
+    -------
+    None
+    """
+    
 
     if train_mfcc_matrix is None and train_label_matrix is None:
         train_mfcc_matrix, train_label_matrix = mfcc_and_label(n_instruments)
@@ -135,10 +260,35 @@ def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=N
 
 
 
-#STEP 4------------------------------------
-def train(n_estimators, mfcc_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_matrix.npy", 
-    label_matrix_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/label_matrix.npy",
-    model_save_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"):
+#STEP 3------------------------------------
+
+def train(n_estimators, mfcc_matrix_path=MFCC_MATRIX_PATH, 
+    label_matrix_path=LABEL_MATRIX_PATH,
+    model_save_path=MODEL_SAVE_PATH):
+
+    """
+    Trains the RandomForest model using normalized feature and label matrix.
+
+    Parameters
+    ----------
+    n_estimators: int
+        Number of estimators the random forest classifier should use
+
+    mfcc_matrix_path: str
+        file path to feature matrix
+
+    label_matrix_path: str
+        file path to label matrix
+
+    model_save_path: str
+        file path to save location of classifier model
+
+    Returns
+    -------
+    clf: classifier
+        Trained RandomForest Classifier
+    """
+
 
     train_mfcc_matrix_normal = np.load(mfcc_matrix_path)
     train_label_matrix = np.load(label_matrix_path)
@@ -154,24 +304,57 @@ def train(n_estimators, mfcc_matrix_path="/Users/hmyip/Documents/repositories/in
             
 
 
-
+#STEP 4------------------------------------
 
 def predict_mode(classifier, matrix):
-    predictions1 = classifier.predict(matrix)
-    return predictions1
+
+    """
+    Makes prediction for each slice of features.
+
+    Parameters
+    ----------
+    classifier: clf
+        classification model
+
+    matrix: array
+        matrix of features that will be classified
+
+    Returns
+    -------
+    predictions: array
+        1D vector, each element is the index of TARGET_NAMES that the model predicts 
+        from that slice of features.
+    """
+
+
+    predictions = classifier.predict(matrix)
+    return predictions
 
 def instrument(predictions):
+
+    """
+    Predicts the instrument by calculating the mode of the vector of predictions.
+
+    Parameters
+    ----------
+    predictions: array
+        vector of predictions for each slice of feature
+
+    Returns
+    -------
+    guess: str
+        final prediciton of instrument in audio file
+
+    guess_dict: dictionary
+        dictionary of probability of each instrument in TARGET NAMES being the instrument in audio file
+    """
     
     unique_elements, counts = np.unique(predictions, return_counts=True)
-    print (unique_elements)
     frequency_predictions = [0 for i in range(len(TARGET_NAMES))]
-    # print frequency_predictions
-    # print counts
     
     for i, j in zip(unique_elements, range(len(counts))):
         frequency_predictions[int(i)] = counts[int(j)]/float(len(predictions))
 
-    print (frequency_predictions)
     guess_dict = {}
     instrument_probability = zip(TARGET_NAMES, frequency_predictions)
     for name, probability in instrument_probability:
@@ -184,32 +367,39 @@ def instrument(predictions):
 
     return guess, guess_dict
 
-# def predict_prob(classifier, matrix):
-#     predictions2 = classifier.predict_proba(matrix)
-#     return predictions2
-
-# def instrument2(predictions):
-#     avg_predictions = np.round(predictions.mean(axis=0), 3)
-#     max_prediction = np.argmax(avg_predictions)
-#     guess2 = TARGET_NAMES[max_prediction]
-#     print avg_predictions
-
-#     guess_dict = {}
-#     instrument_probability = zip(TARGET_NAMES, avg_predictions)
-#     for name, probability in instrument_probability:
-#         guess_dict[name] = round(probability, 3)
-
-#     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
-
-#     return sorted_guesses, guess2
-
 
 
 def real_data(audio_file, 
-    mfcc_means_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_means.npy",
-    mfcc_std_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/mfcc_std.npy", 
-    model_save_path="/Users/hmyip/Documents/repositories/instclf/instclf/resources/instrument_classifier.pkl"):
-    
+    mfcc_means_path=MFCC_MEANS_PATH,
+    mfcc_std_path=MFCC_STD_PATH, 
+    model_save_path=MODEL_SAVE_PATH):
+    """
+    Tests the classifier on an audio file given by user. 
+    Prints the guess and a table of probabilities for each instrument.
+
+    Parameters
+    ----------
+
+    audio_file: str
+        file path to audio file that the classifier will act upon
+
+    mfcc_means_path: str
+        file path of feature means
+
+    mfcc_std_path: str
+        file path of feature standard deviations
+
+    model_save_path: str
+        file path of classification model
+
+    Returns
+    -------
+    sorted guesses: sorted dictionary
+        table of probabilities for each instrument sorted by probabiities
+    """
+
+
+
     clf = joblib.load(model_save_path)
 
     train_mfcc_means = np.load(mfcc_means_path)
@@ -224,8 +414,8 @@ def real_data(audio_file,
     # np.save("/Users/hmyip/Documents/repositories/instclf/tests/data/piano_matrix.npy", audio_mfcc_matrix_normal)
 
     #prediction with mode
-    predictions1 = predict_mode(clf, audio_mfcc_matrix_normal)
-    guess, guess_dict = instrument(predictions1)
+    predictions = predict_mode(clf, audio_mfcc_matrix_normal)
+    guess, guess_dict = instrument(predictions)
     print ("guess1: " + str(guess))
 
     sorted_guesses = sorted(guess_dict.items(), key=lambda item: (item[1], item[0]), reverse=True)
@@ -233,12 +423,34 @@ def real_data(audio_file,
     for key, value in sorted_guesses:
         print ("%s: %s" % (key, value))
 
-    # guess_chart = pd.DataFrame(data=sorted_guesses.as_matrix, columns = ["instrument", "percent chance"], copy=False)
-    # print (guess_chart)
     return sorted_guesses
 
-    # #prediction with probabilities
 
+
+
+
+
+# #prediction with probabilities
+
+
+# def predict_prob(classifier, matrix):
+#     predictions2 = classifier.predict_proba(matrix)
+#     return predictions2
+
+# def instrument2(predictions):
+#     avg_predictions = np.round(predictions.mean(axis=0), 3)
+#     max_prediction = np.argmax(avg_predictions)
+#     guess2 = TARGET_NAMES[max_prediction]
+#     print avg_predictions
+
+    #     guess_dict = {}
+    #     instrument_probability = zip(TARGET_NAMES, avg_predictions)
+    #     for name, probability in instrument_probability:
+    #         guess_dict[name] = round(probability, 3)
+
+    #     sorted_guesses = OrderedDict(sorted(guess_dict.items(), key=operator.itemgetter(1), reverse=True))
+
+    #     return sorted_guesses, guess2
 
     # predictions2 = clf.predict_proba(audio_mfcc_matrix_normal)
     # sorted_guesses, guess2 = instrument2(predictions2)
