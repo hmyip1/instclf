@@ -1,0 +1,67 @@
+{% extends "template.html" %}
+
+{% block content %}
+
+    <h1 class="sub-header">What's the instrument?</h1>
+
+      <form action={{ upload_url }} method="POST" enctype = "multipart/form-data">
+
+          <audio controls autoplay></audio>
+          
+          <script type="text/javascript" src="recorder.js"> </script>
+                      
+                      <fieldset><legend>OPTION 1: RECORD AUDIO</legend>
+          <input onclick="startRecording()" type="button" value="start recording" accept="audio/*;capture=microphone"/>
+          <input onclick="stopRecording()" type="button" value="stop recording and play" />
+                      </fieldset>
+
+          <script>
+            var onFail = function(e) {
+              console.log('Rejected!', e);
+            };
+
+            var onSuccess = function(s) {
+              var context = new webkitAudioContext();
+              var mediaStreamSource = context.createMediaStreamSource(s);
+              recorder = new Recorder(mediaStreamSource);
+              recorder.record();
+
+              // audio loopback
+              // mediaStreamSource.connect(context.destination);
+            }
+
+            window.URL = window.URL || window.webkitURL;
+            navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+            var recorder;
+            var audio = document.querySelector('audio');
+
+            function startRecording() {
+              if (navigator.getUserMedia) {
+                navigator.getUserMedia({audio: true}, onSuccess, onFail);
+              } else {
+                console.log('navigator.getUserMedia not present');
+              }
+            }
+
+            function stopRecording() {
+              recorder.stop();
+              recorder.exportWAV(function(s) {
+                                  
+                                    audio.src = window.URL.createObjectURL(s);
+              });
+            }
+          </script>
+      </body>
+
+
+               <fieldset><legend>OPTION 2: UPLOAD AUDIO</legend>
+         <input type="file" name="file" value="Choose Audio File" accept=".wav, .mp3">
+              </fieldset>
+
+         
+    <input type="submit" id="thisisatest" value="Submit" class="btn btn-primary">
+
+    </form>
+
+{% endblock %}
