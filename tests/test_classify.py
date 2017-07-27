@@ -128,12 +128,12 @@ class TestInstrumentGuess(unittest.TestCase):
 class TestRealData(unittest.TestCase):
 	def test_classifier_on_real_audio_data(self):
 
-		sorted_guesses = classify.real_data(audio_file=AUDIO_PATH, 
+		guess, guess_dict = classify.real_data(audio_file=AUDIO_PATH, 
 			mfcc_means_path=MFCC_MEAN_PATH,
 			mfcc_std_path=MFCC_STD_PATH,
 			model_save_path=MODEL_PATH)
-		self.assertTrue(isinstance(sorted_guesses, list))
-		self.assertEqual(len(sorted_guesses), len(TARGET_NAMES))
+		self.assertTrue(isinstance(guess_dict, dict))
+		self.assertEqual(guess_dict.shape[0], len(TARGET_NAMES))
 		# for i in range(len(TARGET_NAMES)-1):
 		# 	self.assertTrue(list(sorted_guesses.values())[i] >= list(sorted_guesses.values())[i+1])
 
