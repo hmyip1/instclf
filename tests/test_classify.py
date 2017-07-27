@@ -133,7 +133,6 @@ class TestRealData(unittest.TestCase):
 			mfcc_std_path=MFCC_STD_PATH,
 			model_save_path=MODEL_PATH)
 		self.assertTrue(isinstance(guess_dict, dict))
-		self.assertEqual(guess_dict.shape[0], len(TARGET_NAMES))
 		# for i in range(len(TARGET_NAMES)-1):
 		# 	self.assertTrue(list(sorted_guesses.values())[i] >= list(sorted_guesses.values())[i+1])
 
