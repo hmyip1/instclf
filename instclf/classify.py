@@ -389,14 +389,14 @@ def real_data(audio_file,
     #prediction with mode
     predictions = clf.predict(audio_mfcc_matrix_normal)
     guess, guess_dict = instrument(predictions)
-    print ("guess1: " + str(guess))
+    print ("guess: " + str(guess))
 
     sorted_guesses = sorted(guess_dict.items(), key=lambda item: (item[1], item[0]), reverse=True)
 
     for key, value in sorted_guesses:
         print ("%s: %s" % (key, value))
 
-    return sorted_guesses
+    return guess, guess_dict
 
 
 

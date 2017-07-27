@@ -1,0 +1,41 @@
+<!doctype html>
+
+<html>
+     <head>
+       <title>Musical Instrument Classification</title>
+<!--      <link rel="stylesheet" href="{{ url_for('static',
+       filename='style.css') }}"> -->
+     </head>
+
+
+  <body>
+
+<!--        <h3>Your audio file:</h3>
+       <div>{{ content }}</div> -->
+      
+
+       <h3>Prediction:</h3>
+
+       <div>The instrument in audio is most likely: <strong>{{ guess }}</strong></div>
+
+       <div>
+        Other possibilities: {{ sorted_guesses_table }}
+        <table>
+        </table>
+        </div>
+
+
+      <form action='/results' method="POST" enctype=multipart/form-data>
+        <p>
+           <input type="submit" value="Classify another audio file" class="btn btn-primary">
+
+        </p>
+      </form>
+
+
+  </body>
+
+
+
+</html>
+
