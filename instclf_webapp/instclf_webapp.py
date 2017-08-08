@@ -1,16 +1,15 @@
 import os
-import instclf
 from instclf import classify
-reload(classify)
 import numpy as np
 import glob
 import pickle
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
-from wtforms import Form, TextAreaField, validators
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, session
+# from wtforms import Form, TextAreaField, validators
 from vectorizer import vect
 import joblib
 from werkzeug.utils import secure_filename
+from collections import OrderedDict
 
 TARGET_NAMES = ["piano", "violin", "drum_set", "distorted_electric_guitar", "female_singer", "male_singer", "clarinet", "flute", "trumpet", "tenor_saxophone"]
 MFCC_MEANS_PATH = "../instclf/resources/mfcc_means.npy"
@@ -19,10 +18,14 @@ MFCC_MATRIX_PATH = "../instclf/resources/mfcc_matrix.npy"
 LABEL_MATRIX_PATH = "../instclf/resources/label_matrix.npy"
 MODEL_SAVE_PATH = "../instclf/resources/instrument_classifier.pkl"
 UPLOAD_FOLDER="uploads"
-
-
 ALLOWED_EXTENSIONS = set(['wav', 'mp3'])
+
+
+
+
 APP = Flask(__name__)
+APP.secret_key = "super secret key"
+
 APP.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 cur_dir = os.path.dirname(__file__)
@@ -37,13 +40,13 @@ def allowed_file(filename):
 @APP.route('/')
 def index():
 
-    return render_template('home.html')
+    return render_template('index.html')
 
 @APP.route('/upload', methods=['GET', 'POST'])
 def upload():
 
     if request.method == 'POST':
-
+        # if request.form['submit'] == "Upload":
         if 'file' not in request.files:
             flash('No file part')
             return redirect("/")
@@ -58,11 +61,10 @@ def upload():
             filename = secure_filename(file.filename)
             file_save_path = os.path.join(cur_dir, APP.config['UPLOAD_FOLDER'], filename)
             file.save(file_save_path)
-            
-
-
-
             return redirect(url_for('results'))
+
+        # if request.form['submit'] == "Submit Recorded Audio":
+            
 
     return render_template('results.html')
 
@@ -72,7 +74,7 @@ def results():
     list_of_files = glob.glob("uploads/*")
     file_save_path = max(list_of_files, key=os.path.getctime)
     guess, guess_dict = classify.real_data(file_save_path, mfcc_means_path=MFCC_MEANS_PATH, mfcc_std_path=MFCC_STD_PATH, model_save_path=MODEL_SAVE_PATH)
-    print type(guess_dict)
+    guess_dict = OrderedDict(sorted(guess_dict.items(), key=lambda item: (item[1], item[0]), reverse=True))
 
     if request.method == 'POST':
         return redirect("/")
@@ -81,6 +83,7 @@ def results():
 
 
 if __name__ == '__main__':
+
     APP.run(debug=True)
 
 
@@ -88,17 +91,69 @@ if __name__ == '__main__':
 
 """------------LIVE RECORDING OF AUDIO-----------------"""
 
-# from sys import byteorder
-# from array import array
-# from struct import pack
 
-# import pyaudio
-# import wave
 
-# THRESHOLD = 500
-# CHUNK_SIZE = 1024
-# FORMAT = pyaudio.paInt16
-# RATE = 44100
+import pyaudio
+import wave
+ 
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 44100
+CHUNK = 1024
+RECORD_SECONDS = 5
+WAVE_OUTPUT_FILEPATH = "uploads/file.wav"
+ 
+
+@APP.route('/record')
+def record_audio():
+
+    if request.method == 'POST':
+        if request.form['submit'] == 'Do Something':
+            pass # do something
+        elif request.form['submit'] == 'Do Something Else':
+            pass # do something else
+        else:
+            pass # unknown
+    elif request.method == 'GET':
+        return render_template('contact.html', form=form)
+
+
+
+
+
+    if request.method == 'POST':
+
+        audio = pyaudio.PyAudio()
+         
+        # start Recording
+        stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+        print ("recording...")
+        frames = []
+         
+        for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+            data = stream.read(CHUNK)
+            frames.append(data)
+        print ("finished recording")
+         
+        # stop Recording
+        stream.stop_stream()
+        stream.close()
+        audio.terminate()
+         
+        waveFile = wave.open(WAVE_OUTPUT_FILEPATH, 'wb')
+        waveFile.setnchannels(CHANNELS)
+        waveFile.setsampwidth(audio.get_sample_size(FORMAT))
+        waveFile.setframerate(RATE)
+        waveFile.writeframes(b''.join(frames))
+        waveFile.close()
+
+        return redirect(url_for('results'))
+
+    return render_template('results.html')
+
+
 
 # def is_silent(audio_rec):
 #     "Returns 'True' if below the 'silent' threshold"

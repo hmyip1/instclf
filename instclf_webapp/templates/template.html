@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+    <!-- Imports -->
+    <head>
+        <title>Musical Instrument Classifier</title>
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+       
+        <!-- Optional theme -->
+        
+<!--         Latest compiled and minified JavaScript -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+
+<!--         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> -->
+        <!-- Custom styles for this template: to change things, edit style.css -->
+        <link href="static/style.css" rel="stylesheet">
+
+    </head>
+
+    <!-- Website content -->
+    <body data-spy="spyscroll" data-target=".navbar-default">
+
+
+            </div>
+            <div ng-view></div>
+
+            <!-- This is the main area -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-1 main">
+
+
+
+                <!-- This loads content from another html file -->
+                {% block content %}{% endblock %}
+
+            </div>
+          </div>
+        </div>
+
+    </body>
+</html>

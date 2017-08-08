@@ -1,8 +1,15 @@
+{% extends "template.html" %}
+
+{% block content %}
+
+
+
 <!doctype html>
 
 <html>
+     <title>Musical Instrument Classification</title>
      <head>
-       <title>Musical Instrument Classification</title>
+       <h1>Musical Instrument Classification</h1>
 <!--      <link rel="stylesheet" href="{{ url_for('static',
        filename='style.css') }}"> -->
      </head>
@@ -12,21 +19,30 @@
 
 <!--        <h3>Your audio file:</h3>
        <div>{{ content }}</div> -->
-      
 
-       <h3>Prediction:</h3>
-
-       <div>The instrument in audio is most likely: <strong>{{ guess }}</strong></div>
+       <h4>The instrument in the audio is most likely: <strong>{{ guess }}</strong></h4>
 
        <div>
-        Other possibilities: {{ sorted_guesses_table }}
+
+        <h4>Other possibilities:</h4>
+        
         <table>
-        </table>
+            {% for key, value in guess_dict.items() %}
+              {% if value != 0 %}
+               <tr>
+                    <th> {{ key }} </th>
+                    <td> {{ value*100 }} %</td>
+                    
+               </tr>
+               {% endif %}
+            {% endfor %}
+        </table>  
         </div>
 
 
       <form action='/results' method="POST" enctype=multipart/form-data>
         <p>
+        <br>
            <input type="submit" value="Classify another audio file" class="btn btn-primary">
 
         </p>
@@ -35,7 +51,6 @@
 
   </body>
 
-
-
 </html>
 
+{% endblock %}
