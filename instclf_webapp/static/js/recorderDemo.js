@@ -132,13 +132,15 @@ $microphone.click(function() {
       function(stream) {
         microphone = audioContext.createMediaStreamSource(stream);
         microphone.connect(microphoneLevel);
-        $microphone.attr('disabled', true);
+        // $microphone.attr('disabled', true);
         $microphoneLevel.removeClass('hidden');
       },
       function(error) {
         $microphone[0].checked = false;
         audioRecorder.onError(audioRecorder, "Could not get audio input.");
       });
+
+
 });
 
 // recording time limit

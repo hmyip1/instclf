@@ -15,20 +15,27 @@ import operator
 import pandas as pd
 from collections import OrderedDict
 import json
+from scipy.stats import randint as sp_randint
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.datasets import load_digits
+from sklearn.ensemble import RandomForestClassifier
 
 
 
-TARGET_NAMES = ["piano", "violin", "drum_set", "distorted_electric_guitar", "female_singer", "male_singer", "clarinet", "flute", "trumpet", "tenor_saxophone"]
+TARGET_NAMES = ["piano", "electric_piano", "synthesizer", "violin", "cello", 
+                "acoustic_guitar", "clean_electric_guitar", "distorted_electric_guitar", "electric_bass", 
+                "drum_set",  "auxiliary_percussion", "female_singer", "male_singer", 
+                "clarinet", "flute", "trumpet", "saxophone", "banjo"]
 
 MFCC_MEANS_PATH = "resources/mfcc_means.npy"
 MFCC_STD_PATH = "resources/mfcc_std.npy"
 MFCC_MATRIX_PATH = "resources/mfcc_matrix.npy"
 LABEL_MATRIX_PATH = "resources/label_matrix.npy"
 MODEL_SAVE_PATH = "resources/instrument_classifier.pkl"
+TRAIN_FOLDER = "resources/train_data"
 
 
-
-#STEP 1------------------------------------
 
 def get_data():
 
@@ -72,11 +79,11 @@ def compute_features(file):
 
     y, fs = librosa.load(file)
 
-    M = np.array(librosa.feature.mfcc(y, sr=fs, n_mfcc=40))
-    # mfcc_delta = np.array(librosa.feature.delta(mfcc))
-    # mfcc_delta_delta = np.array(librosa.feature.delta(mfcc, order=2))
+    mfcc = np.array(librosa.feature.mfcc(y, sr=fs, n_mfcc=40))
+    mfcc_delta = np.array(librosa.feature.delta(mfcc))
+    mfcc_delta_delta = np.array(librosa.feature.delta(mfcc, order=2))
 
-    # M = np.vstack((mfcc, mfcc_delta, mfcc_delta_delta))
+    M = np.vstack((mfcc, mfcc_delta, mfcc_delta_delta))
 
     return M, y, fs
 
@@ -103,7 +110,7 @@ def normalize_audio(file):
 
 
 
-def mfcc_and_label(n_instruments=None, file_dict=None):
+def mfcc_and_label(n_instruments=None, train_folder=TRAIN_FOLDER, file_dict=None):
     """
     Retrieves data, loops over every file for each instrument in TARGET NAMES 
     to normalize audio and compute features. Matrices are concatenated into a 
@@ -128,41 +135,62 @@ def mfcc_and_label(n_instruments=None, file_dict=None):
     train_label_matrix: array
         Matrix of labels across all training examles
     """
-
-
     if file_dict is None:
         file_dict = get_data()
+
 
     train_mfcc_list = []
     train_label_list = []
 
     label_index = 0
 
+
     if n_instruments is None:
         instrument_labels = TARGET_NAMES
     else:
         instrument_labels = TARGET_NAMES[n_instruments:]
 
+
+
+
     for label in instrument_labels:
-        
-        instrument_mfcc_list_train = []
-        instrument_label_list_train = []
 
-        # loop over files for each instrument
-        for fpath in file_dict[label]:
+        train_mfcc_file = os.path.join(train_folder, "%s-mfcc-train.npy" % label)
+        train_label_file = os.path.join(train_folder, "%s-label-train.npy" % label)
 
-            normalize_audio(fpath)
-            M, y, fs = compute_features(fpath)
-
-            lab = np.zeros((len(M[0]), )) + label_index
-            instrument_mfcc_list_train.append(M)
-            instrument_label_list_train.append(lab)
+        if os.path.exists(train_mfcc_file) and os.path.exists(train_label_file):
+            print "loading existing training file..."
+            instrument_mfcc_matrix_train = np.load(train_mfcc_file)
+            instrument_label_matrix_train = np.load(train_label_file)
 
 
-        instrument_mfcc_matrix_train = np.hstack(instrument_mfcc_list_train) #stacking matrices for each audio file
-        instrument_label_matrix_train = np.hstack(instrument_label_list_train)
-        
-        train_mfcc_list.append(instrument_mfcc_matrix_train) #master master, all instruments smushed
+        else:
+            print "creating new file..."
+
+            instrument_mfcc_list_train = []
+            instrument_label_list_train = []
+
+            # loop over files for each instrument
+            for fpath in file_dict[label]:
+
+                normalize_audio(fpath)
+                M, y, fs = compute_features(fpath)
+
+                lab = np.zeros((len(M[0]), )) + label_index
+                instrument_mfcc_list_train.append(M)
+                instrument_label_list_train.append(lab)
+
+
+            instrument_mfcc_matrix_train = np.hstack(instrument_mfcc_list_train) #stacking matrices for each audio file
+            instrument_label_matrix_train = np.hstack(instrument_label_list_train)
+
+
+            print "saving file..."
+            np.save(train_mfcc_file, instrument_mfcc_matrix_train)
+            np.save(train_label_file, instrument_label_matrix_train)
+            
+
+        train_mfcc_list.append(instrument_mfcc_matrix_train)
         train_label_list.append(instrument_label_matrix_train)
 
         label_index = label_index + 1
@@ -197,10 +225,23 @@ def standardize_matrix(matrix, mean, std):
     return matrix_normal
 
 
+# def load_existing_data(train_folder=TRAIN_FOLDER):
+
+#     for label in TARGET_NAMES:
+#         train_mfcc_file = os.path.join(train_folder, "%s-mfcc-train.npy" % label)
+#         train_label_file = os.path.join(train_folder, "%s-label-train.npy" % label)
+
+#         if os.path.exists(train_mfcc_file) and os.path.exists(train_label_file):
+#             print "loading existing training file..."
+#             instrument_mfcc_matrix_train = np.load(train_mfcc_file)
+#             instrument_label_matrix_train = np.load(train_label_file)
+
+#         train_mfcc_list.append(instrument_mfcc_matrix_train)
+#         train_label_list.append(instrument_label_matrix_train)
 
 
-#STEP 2 ------------------------------------
-def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=None,
+#STEP 1/2 ------------------------------------
+def create_data(n_instruments=None, file_dict=None, train_mfcc_matrix=None, train_label_matrix=None,
     mfcc_means_path=MFCC_MEANS_PATH, 
     mfcc_std_path=MFCC_STD_PATH, 
     mfcc_matrix_path=MFCC_MATRIX_PATH, 
@@ -240,10 +281,11 @@ def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=N
     -------
     None
     """
-    
+    print "creating data..."
 
     if train_mfcc_matrix is None and train_label_matrix is None:
-        train_mfcc_matrix, train_label_matrix = mfcc_and_label(n_instruments)
+        # load_existing_data()
+        train_mfcc_matrix, train_label_matrix = mfcc_and_label()
 
     #STANDARDIZING MFCC MATRIX
 
@@ -260,11 +302,11 @@ def create_data(n_instruments=None, train_mfcc_matrix=None, train_label_matrix=N
 
 
 
-#STEP 3------------------------------------
+#STEP 2/2 ------------------------------------
 
-def train(n_estimators, mfcc_matrix_path=MFCC_MATRIX_PATH, 
-    label_matrix_path=LABEL_MATRIX_PATH,
-    model_save_path=MODEL_SAVE_PATH):
+def train(mfcc_matrix_path=MFCC_MATRIX_PATH, 
+        label_matrix_path=LABEL_MATRIX_PATH,
+        model_save_path=MODEL_SAVE_PATH):
 
     """
     Trains the RandomForest model using normalized feature and label matrix.
@@ -289,18 +331,36 @@ def train(n_estimators, mfcc_matrix_path=MFCC_MATRIX_PATH,
         Trained RandomForest Classifier
     """
 
+    print "performing cross validation and training model..."
 
     train_mfcc_matrix_normal = np.load(mfcc_matrix_path)
     train_label_matrix = np.load(label_matrix_path)
 
     x_train, y_train = (train_mfcc_matrix_normal, train_label_matrix)
    
-    clf = RandomForestClassifier(n_estimators=n_estimators, class_weight=None) #unweighted based on class occurance
-    clf.fit(x_train, y_train)
+    clf = RandomForestClassifier()
 
-    joblib.dump(clf, model_save_path)
 
-    return clf
+    # specify parameters and distributions to sample from
+    param_dist = {"max_depth": [20, 100, 150, 300, 500, None],
+                  "n_estimators": [100, 400],
+                  "class_weight": [None, "balanced"],
+                  "max_features": sp_randint(1, 120),
+                  "bootstrap": [True, False],
+                  "criterion": ["gini", "entropy"]}
+
+    # run randomized search
+    n_iter_search = 20
+    random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
+                                       n_iter=n_iter_search)
+
+    random_search.fit(x_train, y_train)
+    print ("Overall training score = " + str(random_search.score(x_train, y_train)))
+
+    best_clf = random_search.best_estimator_
+    joblib.dump(best_clf, model_save_path)
+
+    return best_clf
             
 
 
@@ -342,10 +402,10 @@ def instrument(predictions):
 
 
 
-def real_data(audio_file, 
-    mfcc_means_path=MFCC_MEANS_PATH,
-    mfcc_std_path=MFCC_STD_PATH, 
-    model_save_path=MODEL_SAVE_PATH):
+def predict(audio_file, 
+            mfcc_means_path=MFCC_MEANS_PATH,
+            mfcc_std_path=MFCC_STD_PATH, 
+            model_save_path=MODEL_SAVE_PATH):
     """
     Tests the classifier on an audio file given by user. 
     Prints the guess and a table of probabilities for each instrument.
@@ -399,6 +459,9 @@ def real_data(audio_file,
     return guess, guess_dict
 
 
+
+create_data()
+train()
 
 
 
