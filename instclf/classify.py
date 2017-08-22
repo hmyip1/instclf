@@ -112,7 +112,8 @@ def normalize_audio(file):
 
 def mfcc_and_label(n_instruments=None, train_folder=TRAIN_FOLDER, file_dict=None):
     """
-    Retrieves data, loops over every file for each instrument in TARGET NAMES 
+    Retrieves data, loads exisitng mfcc and label files, 
+    loops over every file for each instrument in TARGET NAMES 
     to normalize audio and compute features. Matrices are concatenated into a 
     master matrix across all audio files. Returns the MFCC and label matrix.
 

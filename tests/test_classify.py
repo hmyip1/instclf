@@ -53,7 +53,7 @@ class TestComputeFeatures(unittest.TestCase):
 		fpath = relpath("data/piano2.wav")
 		temp_fpath = tmp.NamedTemporaryFile(suffix=".wav")
 		M, y, fs = classify.compute_features(fpath)
-		self.assertEqual(M.shape[0], 40)
+		self.assertEqual(M.shape[0], 120)
 		self.assertTrue(isinstance(y, np.ndarray))
 		self.assertTrue(isinstance(fs, int))
 
@@ -63,16 +63,24 @@ class TestComputeMFCCAndLabelMatrix(unittest.TestCase):
 
 		audio_path = relpath("data/piano2.wav")
 
-		file_dict = {"tenor_saxophone": [audio_path], 
-		"male_singer": [audio_path], 
-		"distorted_electric_guitar": [audio_path], 
-		"female_singer": [audio_path], 
-		"drum_set": [audio_path], 
+		file_dict = {"piano": [audio_path], 
+		"electric_piano": [audio_path], 
+		"synthesizer": [audio_path], 
 		"violin": [audio_path], 
-		"piano": [audio_path], 
-		"flute": [audio_path], 
-		"trumpet": [audio_path], 
-		"clarinet": [audio_path]}
+		"cello": [audio_path], 
+		"acoustic_guitar": [audio_path], 
+		"clean_electric_guitar": [audio_path], 
+		"distorted_electric_guitar": [audio_path], 
+		"electric_bass": [audio_path], 
+		"drum_set": [audio_path],
+		"auxiliary_precussion": [audio_path],
+		"female_singer": [audio_path],
+		"male_singer": [audio_path],
+		"clarinet": [audio_path],
+		"flute": [audio_path],
+		"trumpet": [audio_path],
+		"saxophone": [audio_path],
+		"banjo": [audio_path]}
 
 		actual_mfcc, actual_label = classify.mfcc_and_label(file_dict=file_dict)
 		self.assertEqual(actual_mfcc.shape[0], actual_label.shape[0])
@@ -106,8 +114,7 @@ class TestTrain(unittest.TestCase):
 		if os.path.exists(MODEL_PATH):
 			os.remove(MODEL_PATH)
 
-		actual_clf = classify.train(n_estimators=10, 
-			mfcc_matrix_path=MFCC_PATH, label_matrix_path=LABEL_PATH, model_save_path=MODEL_PATH)
+		actual_clf = classify.train(mfcc_matrix_path=MFCC_PATH, label_matrix_path=LABEL_PATH, model_save_path=MODEL_PATH)
 		self.assertTrue(isinstance(actual_clf, ForestClassifier))
 		self.assertTrue(os.path.exists(MODEL_PATH))
 
@@ -125,10 +132,10 @@ class TestInstrumentGuess(unittest.TestCase):
 		self.assertEqual(len(guess_dict.keys()), len(TARGET_NAMES))
 		
 
-class TestRealData(unittest.TestCase):
+class TestPredict(unittest.TestCase):
 	def test_classifier_on_real_audio_data(self):
 
-		guess, guess_dict = classify.real_data(audio_file=AUDIO_PATH, 
+		guess, guess_dict = classify.predict(audio_file=AUDIO_PATH, 
 			mfcc_means_path=MFCC_MEAN_PATH,
 			mfcc_std_path=MFCC_STD_PATH,
 			model_save_path=MODEL_PATH)

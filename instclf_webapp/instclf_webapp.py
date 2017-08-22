@@ -72,8 +72,9 @@ def results():
     list_of_files = glob.glob("uploads/*")
     file_save_path = max(list_of_files, key=os.path.getctime)
     guess, guess_dict = classify.predict(file_save_path, mfcc_means_path=MFCC_MEANS_PATH, mfcc_std_path=MFCC_STD_PATH, model_save_path=MODEL_SAVE_PATH)
+    guess = guess.replace("_", " ")
     guess_dict = OrderedDict(sorted(guess_dict.items(), key=lambda item: (item[1], item[0]), reverse=True))
-
+    
     if request.method == 'POST':
         return redirect("/")
 

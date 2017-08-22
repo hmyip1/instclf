@@ -30,7 +30,7 @@
             {% for key, value in guess_dict.items() %}
               {% if value != 0 %}
                <tr>
-                    <th> {{ key }} </th>
+                    <th> {{ str(key).replace("_", " ") }} </th>
                     <td> {{ value*100 }} %</td>
                     
                </tr>
