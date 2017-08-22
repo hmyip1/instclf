@@ -34,6 +34,7 @@ MFCC_MATRIX_PATH = "resources/mfcc_matrix.npy"
 LABEL_MATRIX_PATH = "resources/label_matrix.npy"
 MODEL_SAVE_PATH = "resources/instrument_classifier.pkl"
 TRAIN_FOLDER = "resources/train_data"
+FILE_DICT_PATH = "resources/file_dict.json"
 
 
 
@@ -51,8 +52,7 @@ def get_data():
     file_dict: dictionary
         dictionary of instrument and filepaths of examples from MedleyDB and Philharmonia
     """
-
-    with open('file_dict.json', 'r') as fp:
+    with open(FILE_DICT_PATH, 'r') as fp:
         file_dict = json.load(fp)
     return file_dict
 
